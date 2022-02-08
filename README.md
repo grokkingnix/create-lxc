@@ -1,6 +1,6 @@
 # Easily create unprivileged Linux containers in Slackware
 
-Check the post that covers using Slackware based Linux containers for more details on the individual steps.
+Check the [post](https://nixing.mx/posts/unprivileged-containers-in-slackware-15.html) that covers using Slackware based Linux containers for more details on the individual steps
 
 Once you have the container host ready, check the script's help message by running it without parameters:
 
@@ -24,17 +24,15 @@ Running the above will result in the following:
 
 Create a privileged container based on Slackware 15.0 with the name of test1, the slackpkg mirror used will  
 be the default in the /usr/share/lxc/templates/lxc-slackware template and /root/lxc/default.conf will be used 
-as a custom LXC configuration file. A basic DHCP configuration will be set in the container i.e. USE_DHCP[0]="yes
-"
+as a custom LXC configuration file. A basic DHCP configuration will be set in the container i.e. `USE_DHCP[0]="yes"`
 
-Once the test1 privileged container is created the script will convert it to unprivileged and transfer it to the
- lxcuser's environment. Ownership will be granted to the lxcuser user and the lxc group.
+Once the `test1` privileged container is created the script will convert it to unprivileged and transfer it to the `lxcuser`'s environment. Ownership will be granted to the `lxcuser` user and the `lxc` group.
 
-The various steps in the "Convert privileged container to unprivileged" section of this post will be performed end    ing with an unprivileged container.
+The various steps in the [Convert privileged container to unprivileged](https://nixing.mx/posts/unprivileged-containers-in-slackware-15.html#convert-privileged-container-to-unprivileged) section of my post will be performed end    ing with an unprivileged container.
 
-The original privileged container will then be deleted.
+The original `test1` privileged container will then be deleted.
 
-The above command would result in the following output as the lxcuser:
+The above command would result in the following output as the `lxcuser`:
 
     lxcuser@slack15:~$ lxc-ls -f
     NAME     STATE   AUTOSTART GROUPS IPV4       IPV6 UNPRIVILEGED 
@@ -46,3 +44,5 @@ Start the container as usual:
     lxcuser@slack15:~$ lxc-ls -f
     NAME     STATE   AUTOSTART GROUPS IPV4       IPV6 UNPRIVILEGED 
     test1    RUNNING 0         -      10.0.3.65  -    true         
+    
+Enjoy!
