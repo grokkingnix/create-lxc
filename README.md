@@ -28,7 +28,7 @@ as a custom LXC configuration file. A basic DHCP configuration will be set in th
 
 Once the `test1` privileged container is created the script will convert it to unprivileged and transfer it to the `lxcuser`'s environment. Ownership will be granted to the `lxcuser` user and the `lxc` group.
 
-The various steps in the [Convert privileged container to unprivileged](https://nixing.mx/posts/unprivileged-containers-in-slackware-15.html#convert-privileged-container-to-unprivileged) section of my post will be performed end    ing with an unprivileged container.
+The various steps in the [Convert privileged container to unprivileged](https://nixing.mx/posts/unprivileged-containers-in-slackware-15.html#convert-privileged-container-to-unprivileged) section of my post will be performed ending with an unprivileged container.
 
 The original `test1` privileged container will then be deleted.
 
