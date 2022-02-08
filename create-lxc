@@ -1,0 +1,232 @@
+#!/bin/bash
+
+# This script will handle the following steps:
+# 1. priv container creation
+# 2. priv container conversion to unpriv
+# 3. deletion of the priv container
+
+# Exit on errors
+set -e
+
+# Usage message that explains command flags
+USAGE="The create-lxc script takes the following options:
+    -r  Set Slackware release to use, if not set use the default specified in /usr/share/lxc/templates/lxc-slackware
+    -m  Set mirror to use, if not set use the default specified in /usr/share/lxc/templates/lxc-slackware
+    -n  Set container name to use, this parameter is required
+    -t  Set template to use, if not set use /usr/share/lxc/templates/lxc-slackware
+    -f  Set config file to use
+    -u  Set non privileged user that will own the resulting container, this parameter is required
+    -g  Set user group that will be used to set the necessary permissions, this parameter is required
+    -d  Create the container with a basic DHCP configuration
+    -h  Print help options and exit"
+
+# Message when an flag does not have an argument and it should
+ARG_ERR_MSG="An option you provided requires an argument, see below.
+    "
+
+# Function that will display the expected usage
+function usage() {
+    echo "$USAGE"
+    exit 1
+}
+
+# Determine if any arguments were passed in by the user
+if (( $# < 1 ))
+
+# If no arguments, print the usage message and exit
+then
+        usage
+fi
+
+# Define the flags the user can pass to the script
+while getopts :r:m:n:t:f:u:g:dh flag
+do
+    case "${flag}" in
+    r) REL=${OPTARG};;
+    m) MIRR=${OPTARG};;
+    n) CNAME=${OPTARG};;
+    t) TEMPLATE=${OPTARG};;
+    f) CONFIG=${OPTARG};;
+    u) UNPRIVUSER=${OPTARG};;
+    g) UNPRIVGROUP=${OPTARG};;
+    d) DHCP=true;;
+    h) usage;;
+    :) echo "$ARG_ERR_MSG"
+        usage;;
+    *) usage;;
+esac
+done
+
+# Make sure this script is run as root
+if [ "$(id -u)" != "0" ]; then
+    echo "This script should be run as 'root'."
+    exit 1
+fi
+
+# Container name must be provided
+if [ -z "$CNAME" ]; then
+    echo "Container name -n parameter is required."
+    exit 1
+fi
+
+# Unpriv user name must be provided
+if [ -z "$UNPRIVUSER" ]; then
+    echo "Unprivileged user name -u parameter is required."
+    exit 1
+fi
+
+# Unpriv group name must be provided
+if [ -z "$UNPRIVGROUP" ]; then
+    echo "Unprivileged group -g parameter is required."
+    exit 1
+fi
+
+# Check if $UNPRIVUSER exists
+if ! id -u $UNPRIVUSER &>/dev/null; then
+    echo "Unprivileged user $UNPRIVUSER does not exist in the system."
+        exit 1
+fi
+
+# Check if $UNPRIVGROUP exists
+if [ $(getent group $UNPRIVGROUP | wc -l) -eq 0 ]; then
+    echo "User group $UNPRIVGROUP does not exist in the system."
+        exit 1
+fi
+
+# Check if $UNPRIVGROUP is assigned to $UNPRIVUSER
+if [ $(id -nG $UNPRIVUSER | grep $UNPRIVGROUP | wc -l) -eq 0 ]; then
+    echo "Unprivileged user $UNPRIVUSER does not belong to group $UNPRIVGROUP."
+        exit 1
+fi
+
+# Function to create a privileged container
+function createContainer() {
+
+        # Check if the $CONFIG parameter was passed in
+        if [ -n "$CONFIG" ]
+
+        # If the $CONFIG was set build container with $CONFIG value
+        then
+
+                # Create the container with the $CONFIG value
+                release=$REL MIRROR=$MIRR lxc-create -n $CNAME -t ${TEMPLATE:-slackware} -f $CONFIG
+        else
+
+                # Create the container without the $CONFIG value
+                release=$REL MIRROR=$MIRR lxc-create -n $CNAME -t ${TEMPLATE:-slackware}
+        fi
+
+        # Check if the -d flag was passed in
+        if [ $DHCP ] 
+
+        # If DCHP = true
+        then
+
+                # Print message to console
+                echo "Enabling DHCP in the $CNAME container"
+
+                # Set DHCP to yes on the created container
+                sed -i "s|^USE_DHCP\[0\]=\"[^]]*\"|USE_DHCP\[0\]=\"yes\"|" /var/lib/lxc/$CNAME/rootfs/etc/rc.d/rc.inet1.conf
+        fi
+}
+
+# Function to download and build the tools for container gid and uid remapping
+function buildTools() {
+
+        # Create the $WORKDIR
+        mkdir -p $WORKDIR
+
+        # Enter the work directory
+        cd $WORKDIR
+
+        # Download the container-userns-convert container script
+        wget http://bazaar.launchpad.net/~serge-hallyn/+junk/nsexec/download/serge.hallyn%40canonical.com-20130411171229-qkyvmd0d6jbmt0oo/convert_container-20121030152620-2zy9rkac9y6htoia-1/container-userns-convert
+
+        # Download the uidmapshift.c file
+        wget http://bazaar.launchpad.net/~serge-hallyn/+junk/nsexec/download/serge.hallyn%40ubuntu.com-20160321073901-8aa6uxiegf5athdc/uidmapshift.c-20121030152620-2zy9rkac9y6htoia-8/uidmapshift.c
+
+        # Build uidmapshift.c
+        gcc -o uidmapshift uidmapshift.c
+
+        # Edit the container-userns-convert script
+        sed -i "s|^uidmapshift -b /var/lib/lxc/\$container/rootfs 0 \$uid \$range|./uidmapshift -b /var/lib/lxc/\$container/rootfs 0 \$uid \$range|" container-userns-convert
+
+        # Add execute permissions to the container-userns-convert
+        chmod +x container-userns-convert
+}
+
+# Function to convert the created container to be unprivileged
+function convertContainer() {
+
+        # Define the work directory
+        WORKDIR=/tmp/create-lxc-tmpdir
+
+        # Check if $WORKDIR does not exist
+        # This means we don't have the build tools in the system
+        # we need to download them and build uidmapshift.c
+        if [ ! -d "$WORKDIR" ]; then
+
+                # If $WORKDIR does not exist run the buildTools func
+                buildTools
+        fi
+
+        # Execute uid and gid remapping
+        $WORKDIR/container-userns-convert $CNAME 100000
+
+        # Create the appropriate directory for the unpriv container
+        mkdir -p /home/$UNPRIVUSER/.local/share/lxc
+
+        # Assign the ownership to the unpriv user and unpriv group
+        chown $UNPRIVUSER:$UNPRIVGROUP /home/$UNPRIVUSER/.local/share/lxc
+
+        # Assign execute permissions
+        chmod a+x /home/$UNPRIVUSER
+
+        # Copy the container over to the $UNPRIVUSER's environment
+        cp -a /var/lib/lxc/$CNAME /home/$UNPRIVUSER/.local/share/lxc/
+
+        # Assign proper ownership of the copies files
+        chown $UNPRIVUSER:$UNPRIVGROUP /home/$UNPRIVUSER/.local/share/lxc/$CNAME /home/$UNPRIVUSER/.local/share/lxc/$CNAME/config
+
+        # Add read+execute permissions to the container dir
+        chmod a+rx /home/$UNPRIVUSER/.local/share/lxc/$CNAME
+
+        # Delete duplicate line in the config file
+        sed -i "s|^lxc.rootfs.path = /var/lib/lxc/$CNAME/rootfs||" /home/$UNPRIVUSER/.local/share/lxc/$CNAME/config
+
+        # Update line in the config file
+        sed -i "s|^lxc.rootfs.path = dir:/var/lib/lxc/$CNAME/rootfs|lxc.rootfs.path = dir:/home/$UNPRIVUSER/.local/share/lxc/$CNAME/rootfs|" /home/$UNPRIVUSER/.local/share/lxc/$CNAME/config
+
+        # Update line in the config file
+        sed -i "s|^lxc.mount.fstab = /var/lib/lxc/$CNAME/rootfs/etc/fstab|lxc.mount.fstab = /home/$UNPRIVUSER/.local/share/lxc/$CNAME/rootfs/etc/fstab|" /home/$UNPRIVUSER/.local/share/lxc/$CNAME/config
+
+        # Update line in the config file
+        sed -i "s|^lxc.id_map = u 0 100000 10000|lxc.idmap = u 0 100000 10000|" /home/$UNPRIVUSER/.local/share/lxc/$CNAM
+
+        # Update line in the config file
+        sed -i "s|^lxc.id_map = g 0 100000 10000|lxc.idmap = g 0 100000 10000|" /home/$UNPRIVUSER/.local/share/lxc/$CNAM
+
+        # Add appropriate mount points line to end of file
+        echo "lxc.mount.auto = proc:mixed sys:ro cgroup" >> /home/$UNPRIVUSER/.local/share/lxc/$CNAME/config
+
+        # Remove the proc entry from fstab
+        sed -i "s|^none /var/lib/lxc/c1/rootfs/proc    proc   defaults 0 0||" /home/$UNPRIVUSER/.local/share/lxc/$CNAME/
+
+        # Remove the proc entry from fstab
+        sed -i "s|^none /var/lib/lxc/c1/rootfs/sys     sysfs  defaults 0 0||" /home/$UNPRIVUSER/.local/share/lxc/$CNAME/
+
+        # Print message to console
+        echo "Container conversion complete for container $CNAME"
+
+        # Print message to console
+        echo "Removing privileged $CNAME container"
+
+        # Remove original privileged container
+        rm -rf /var/lib/lxc/$CNAME
+}
+
+# Execute the createContainer function
+createContainer
+
+# Execute the convertContainer function
+convertContainer
