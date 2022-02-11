@@ -1,5 +1,7 @@
 # Easily create unprivileged Linux containers in Slackware
 
+This script assumes that you have successfully completed all steps in part 1 from Chris Willing's [guide](https://www.chriswilling.com/lxc/setup-unpriv-slackware.html) and worked through the steps described in this [post](https://nixing.mx/posts/unprivileged-containers-in-slackware-15.html) up until the "Host networking" section. The script will not change any configuration on the host.
+
 Check the [post](https://nixing.mx/posts/unprivileged-containers-in-slackware-15.html) that covers using Slackware based Linux containers for more details on the individual steps
 
 Once you have the container host ready, check the script's help message by running it without parameters:
