@@ -21,21 +21,24 @@ Once you have the container host ready, check the script's help message by runni
 Creating an unprivileged container:
 
     root@slack15:~# ./create-lxc -dr 15.0 -n test1 -u lxcuser -g lxc -f /root/lxc/default.conf
+
+The above command will run the `create-lxc` script which will execute the following actions:
+
+- Create a privileged container based on Slackware `15.0`
+- Container's name will be `test1`
+- Use the default `slackpkg` mirror defined in `/usr/share/lxc/templates/lxc-slackware`
+- The `/root/lxc/default.conf` file will be used as a custom LXC configuration file
+- A basic DHCP configuration will be set in the container i.e. `USE_DHCP[0]="yes"`
+- Once the `test1` privileged container is created, convert it to unprivileged and transfer it to the `lxcuser`'s environment
+- Download and build tools required for uid and gid remapping if necessary, search path is `/tmp/create-lxc-tmpdir`
+- Remap `uid`s and `gid`s
+- Ownership of the relevant container files will be granted to the `lxcuser` user and the `lxc` group.
+- Update `test1` configuration from privileged to unprivileged
+- Update `test1` mount point configuration
+- The original `test1` privileged container will then be deleted.
+
+Once the script finishes the above tasks the user can expect the following output, as the `lxcuser`:
 	
-Running the above will result in the following:
-
-Create a privileged container based on Slackware 15.0 with the name of `test1`, the slackpkg mirror used will  
-be the default in the `/usr/share/lxc/templates/lxc-slackware` template and `/root/lxc/default.conf` will be used 
-as a custom LXC configuration file. A basic DHCP configuration will be set in the container i.e. `USE_DHCP[0]="yes"`
-
-Once the `test1` privileged container is created the script will convert it to unprivileged and transfer it to the `lxcuser`'s environment. Ownership will be granted to the `lxcuser` user and the `lxc` group.
-
-The various steps in the [Convert privileged container to unprivileged](https://nixing.mx/posts/unprivileged-containers-in-slackware-15.html#convert-privileged-container-to-unprivileged) section of my post will be performed ending with an unprivileged container.
-
-The original `test1` privileged container will then be deleted.
-
-The above command would result in the following output as the `lxcuser`:
-
     lxcuser@slack15:~$ lxc-ls -f
     NAME     STATE   AUTOSTART GROUPS IPV4       IPV6 UNPRIVILEGED 
     test1    STOPPED 0         -      -          -    true         
