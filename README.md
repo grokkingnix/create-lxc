@@ -30,7 +30,7 @@ The above command will run the `create-lxc` script which will execute the follow
 - The `/root/lxc/default.conf` file will be used as a custom LXC configuration file
 - A basic DHCP configuration will be set in the container i.e. `USE_DHCP[0]="yes"`
 - Once the `test1` privileged container is created, convert it to unprivileged and transfer it to the `lxcuser`'s environment
-- Download and build tools required for uid and gid remapping if necessary, search path is `/tmp/create-lxc-tmpdir`
+- Download and build tools required for `uid` and `gid` remapping if necessary, search path is `/tmp/create-lxc-tmpdir`
 - Remap `uid`s and `gid`s
 - Ownership of the relevant container files will be granted to the `lxcuser` user and the `lxc` group.
 - Update `test1` configuration from privileged to unprivileged
