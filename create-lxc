@@ -204,19 +204,19 @@ function convertContainer() {
         sed -i "s|^lxc.mount.fstab = /var/lib/lxc/$CNAME/rootfs/etc/fstab|lxc.mount.fstab = /home/$UNPRIVUSER/.local/share/lxc/$CNAME/rootfs/etc/fstab|" /home/$UNPRIVUSER/.local/share/lxc/$CNAME/config
 
         # Update line in the config file
-        sed -i "s|^lxc.id_map = u 0 100000 10000|lxc.idmap = u 0 100000 10000|" /home/$UNPRIVUSER/.local/share/lxc/$CNAME
+        sed -i "s|^lxc.id_map = u 0 100000 10000|lxc.idmap = u 0 100000 10000|" /home/$UNPRIVUSER/.local/share/lxc/$CNAME/config
 
         # Update line in the config file
-        sed -i "s|^lxc.id_map = g 0 100000 10000|lxc.idmap = g 0 100000 10000|" /home/$UNPRIVUSER/.local/share/lxc/$CNAME
+        sed -i "s|^lxc.id_map = g 0 100000 10000|lxc.idmap = g 0 100000 10000|" /home/$UNPRIVUSER/.local/share/lxc/$CNAME/config
 
         # Add appropriate mount points line to end of file
         echo "lxc.mount.auto = proc:mixed sys:ro cgroup" >> /home/$UNPRIVUSER/.local/share/lxc/$CNAME/config
 
         # Remove the proc entry from fstab
-        sed -i "s|^none /var/lib/lxc/c1/rootfs/proc    proc   defaults 0 0||" /home/$UNPRIVUSER/.local/share/lxc/$CNAME/config
+        sed -i "s|^none /var/lib/lxc/c1/rootfs/proc    proc   defaults 0 0||" /home/$UNPRIVUSER/.local/share/lxc/$CNAME/rootfs/etc/fstab
 
         # Remove the proc entry from fstab
-        sed -i "s|^none /var/lib/lxc/c1/rootfs/sys     sysfs  defaults 0 0||" /home/$UNPRIVUSER/.local/share/lxc/$CNAME/config
+        sed -i "s|^none /var/lib/lxc/c1/rootfs/sys     sysfs  defaults 0 0||" /home/$UNPRIVUSER/.local/share/lxc/$CNAME/rootfs/etc/fstab
 
         # Print message to console
         echo "Container conversion complete for container $CNAME"
