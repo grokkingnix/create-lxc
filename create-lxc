@@ -170,6 +170,9 @@ function convertContainer() {
                 buildTools
         fi
 
+        # Enter the $WORKDIR
+        cd $WORKDIR
+
         # Execute uid and gid remapping
         $WORKDIR/container-userns-convert $CNAME 100000
 
